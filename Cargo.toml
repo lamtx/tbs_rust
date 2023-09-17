@@ -1,0 +1,19 @@
+[package]
+name = "tbs"
+version = "0.1.0"
+edition = "2021"
+
+# https://github.com/johnthagen/min-sized-rust#readme
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+lto = true # Enable Link Time Optimization (LTO)
+codegen-units = 1 # Reduce Parallel Code Generation Units to Increase Optimization
+panic = "abort"
+
+[build]
+rustflags = "-Zlocation-detail=none"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.3", features = ["derive"] }
+opener = "0.6.1"
