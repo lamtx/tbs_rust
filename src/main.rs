@@ -1,9 +1,22 @@
-#![feature(str_split_remainder)]
-
+use std::fs::{create_dir, remove_dir_all};
 use std::path::Path;
 use std::process::{Command, ExitCode};
-
 use clap::{Parser, Subcommand};
+
+type Result = std::result::Result<(), ()>;
+
+trait Skipable {
+    fn ignore(&self) -> Result;
+}
+
+impl<T, E> Skipable for std::result::Result<T, E> {
+    fn ignore(&self) -> Result {
+        match self {
+            Ok(_) => Ok(()),
+            Err(_) => Err(())
+        }
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(name = "tbs")]
@@ -88,14 +101,18 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(cli: Cli) -> Result<(), ()> {
+fn run(cli: Cli) -> Result {
     match cli.command {
         Commands::Pull { command } => match command {
             Pull::Config => {
                 shell("adb pull /sdcard/TBS/config.json")?;
                 open("config.json")?;
             }
-            Pull::Log => {}
+            Pull::Log => {
+                remove_dir_all("Log").ignore()?;
+                create_dir("Log").ignore()?;
+                shell("adb pull /sdcard/TBS/Log")?;
+            }
         }
         Commands::Push { command } => match command {
             Push::Config => {
@@ -120,7 +137,7 @@ fn run(cli: Cli) -> Result<(), ()> {
     Ok(())
 }
 
-fn shell(program_line: &str) -> Result<(), ()> {
+fn shell(program_line: &str) -> Result {
     let mut split = program_line.split(' ');
     let program = split.next().unwrap();
     let args: Vec<&str> = split.collect();
@@ -143,7 +160,7 @@ fn shell(program_line: &str) -> Result<(), ()> {
     if ok { Ok(()) } else { Err(()) }
 }
 
-fn open(path: &str) -> Result<(), ()> {
+fn open(path: &str) -> Result {
     opener::open(Path::new(path)).map_err(|_| ())
 }
 
