@@ -17,3 +17,4 @@ rustflags = "-Zlocation-detail=none"
 [dependencies]
 clap = { version = "4.4.3", features = ["derive"] }
 opener = "0.6.1"
+string-builder = "0.2.0"

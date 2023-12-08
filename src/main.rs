@@ -91,6 +91,40 @@ enum AM {
         #[arg(short, long, default_value = "5")]
         signal: String,
     },
+    /// Initiate a new video call
+    Call {
+        #[command(subcommand)]
+        command: Call,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum Call {
+    /// Initiate a new Vidyo (LifeStream) call
+    Vidyo {
+        /// Room
+        room: String,
+        /// PIN (access code)
+        #[arg(short, long)]
+        pin: Option<String>,
+        /// Patient's display name
+        #[arg(short, long)]
+        display_name: Option<String>,
+        /// Host
+        #[arg(short, long)]
+        end_point: Option<String>,
+    },
+    /// Initiate a new Zoom call
+    Zoom {
+        /// Meeting number
+        #[arg(short, long)]
+        number: Option<String>,
+        /// Password
+        #[arg(short, long)]
+        password: Option<String>,
+        /// Meeting link,
+        link: Option<String>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -127,10 +161,67 @@ fn run(cli: Cli) -> Result {
         }
         Commands::AM { command } => match command {
             AM::Register { phone, token } => {
-                shell(&format!("adb shell am start -n com.mobilehelp.alert/.ui.registration.WelcomeActivity -a com.mobilehelp.auto.register --es phone {phone} --es token {token}"))?;
+                shell(&format!("adb shell am start \
+                    -n com.mobilehelp.alert/.ui.registration.WelcomeActivity \
+                    -a com.mobilehelp.auto.register \
+                    --es phone {phone} \
+                    --es token {token}"
+                ))?;
             }
             AM::RX { dui, address, signal } => {
-                shell(&format!("adb shell am start -n com.mobilehelp.stub.i2c/.services.I2CService -a fake --es dui {dui} --es address {address} --es signal {signal}"))?;
+                shell(&format!("adb shell am start \
+                    -n com.mobilehelp.stub.i2c/.services.I2CService \
+                    -a fake \
+                    --es dui {dui} \
+                    --es address {address} \
+                    --es signal {signal}"
+                ))?;
+            }
+            AM::Call { command } => match command {
+                Call::Vidyo { room, pin, display_name, end_point } => {
+                    let mut s = String::from(
+                        "adb shell am start \
+                        -n com.mobilehelp.vidyomeeting/.MainActivity \
+                        -c android.intent.category.LAUNCHER \
+                        -a android.intent.action.MAIN \
+                        --activity-single-top \
+                        --es room "
+                    );
+                    s += &room;
+                    if let Some(pin) = pin {
+                        s += " --es pin ";
+                        s += &pin;
+                    }
+                    if let Some(display_name) = display_name {
+                        s += " --es displayName \"";
+                        s += &display_name;
+                        s += "\"";
+                    }
+                    if let Some(end_point) = end_point {
+                        s += " --es host ";
+                        s += &end_point;
+                    }
+                    shell(&s)?;
+                }
+                Call::Zoom { number, password, link } => {
+                    let mut s = String::from(
+                        "adb shell am start \
+                        -n com.mobilehelp.zoom/.activities.StartMeetingActivity \
+                        -c android.intent.category.LAUNCHER \
+                        -a android.intent.action.MAIN \
+                        --activity-single-top"
+                    );
+                    if let Some(link) = link {
+                        s += " --es meetingLink ";
+                        s += &link;
+                    } else {
+                        s += " --es meetingNumber ";
+                        s += &number.required("Meeting number");
+                        s += " --es password ";
+                        s += &password.required("Password");
+                    }
+                    shell(&s)?;
+                }
             }
         }
     }
@@ -164,4 +255,16 @@ fn open(path: &str) -> Result {
     opener::open(Path::new(path)).map_err(|_| ())
 }
 
+trait Required<T> {
+    fn required(self, name: &str) -> T;
+}
+
+impl<T> Required<T> for Option<T> {
+    fn required(self, name: &str) -> T {
+        return match self {
+            None => panic!("{name} is required."),
+            Some(value) => value,
+        };
+    }
+}
 
