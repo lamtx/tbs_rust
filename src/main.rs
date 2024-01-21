@@ -82,7 +82,7 @@ enum AM {
     /// Fake packet 433 sent
     RX {
         /// DUI (device unique identifier)
-        #[arg(short, long, default_value = "30")]
+        #[arg(short, long, default_value = "32")]
         dui: String,
         /// Pendant address
         #[arg(short, long, default_value = "1")]
@@ -172,9 +172,9 @@ fn run(cli: Cli) -> Result {
                 shell(&format!("adb shell am startservice \
                     -n com.mobilehelp.stub.i2c/.services.I2CService \
                     -a fake \
-                    --es dui {dui} \
-                    --es address {address} \
-                    --es signal {signal}"
+                    --ei dui {dui} \
+                    --ei address {address} \
+                    --ei signal {signal}"
                 ))?;
             }
             AM::Call { command } => match command {
