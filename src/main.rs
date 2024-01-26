@@ -151,6 +151,7 @@ fn run(cli: Cli) -> Result {
         Commands::Push { command } => match command {
             Push::Config => {
                 shell("adb push config.json /sdcard/TBS/")?;
+                shell("adb shell am startservice -n com.mobilehelp.mhservices/.services.MHService -a restore-config");
                 shell("adb shell am broadcast -a com.mobilehelp.action.config.updated")?;
             }
         }
