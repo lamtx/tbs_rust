@@ -171,7 +171,7 @@ fn run(cli: Cli) -> Result {
             }
             AM::RX { dui, address, signal } => {
                 shell(&format!("adb shell am startservice \
-                    -n com.mobilehelp.stub.i2c/.services.I2CService \
+                    -n com.mobilehelp.stub.i2c/.services.I2cService \
                     -a fake \
                     --ei dui {dui} \
                     --ei address {address} \
